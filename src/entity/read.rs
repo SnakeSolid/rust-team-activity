@@ -9,6 +9,8 @@ use super::Feed;
 use super::FeedError;
 use super::FeedResult;
 use super::Object;
+use super::ObjectError;
+use super::ObjectResult;
 
 pub fn read_map<I>(element_name: &str, it: &mut I) -> HashMap<String, String>
 where
@@ -53,6 +55,163 @@ where
     properties
 }
 
+fn read_object(properties: &HashMap<String, String>) -> ObjectResult<Object> {
+    debug!("parsing object from {:?}", properties);
+
+    match properties.get("object-type").map(|s| s.as_str()) {
+        Some("http://activitystrea.ms/schema/1.0/comment") => read_comment(properties),
+        Some("http://activitystrea.ms/schema/1.0/file") => read_file(properties),
+        Some("http://activitystrea.ms/schema/1.0/person") => read_person(properties),
+        Some("http://streams.atlassian.com/syndication/types/changeset") => {
+            read_changeset(properties)
+        }
+        Some("http://streams.atlassian.com/syndication/types/issue") => read_issue(properties),
+        Some("http://streams.atlassian.com/syndication/types/repository") => {
+            read_repository(properties)
+        }
+        Some("http://streams.atlassian.com/syndication/types/review") => read_review(properties),
+        Some("http://streams.atlassian.com/syndication/types/page") => read_page(properties),
+        Some("http://streams.atlassian.com/syndication/types/space") => read_space(properties),
+        Some(object_type) => Err(ObjectError::wrong_object_type(object_type)),
+        None => Err(ObjectError::MissingObjectType),
+    }
+}
+
+fn read_comment(properties: &HashMap<String, String>) -> ObjectResult<Object> {
+    let id = properties
+        .get("id")
+        .ok_or_else(|| ObjectError::element_not_found("id"))?;
+    let alternate = properties
+        .get("alternate")
+        .ok_or_else(|| ObjectError::element_not_found("alternate"))?;
+
+    Ok(Object::comment(id, alternate))
+}
+
+fn read_file(properties: &HashMap<String, String>) -> ObjectResult<Object> {
+    let id = properties
+        .get("id")
+        .ok_or_else(|| ObjectError::element_not_found("id"))?;
+    let title = properties
+        .get("title")
+        .ok_or_else(|| ObjectError::element_not_found("title"))?;
+    let alternate = properties
+        .get("alternate")
+        .ok_or_else(|| ObjectError::element_not_found("alternate"))?;
+
+    Ok(Object::file(id, title, alternate))
+}
+
+fn read_person(properties: &HashMap<String, String>) -> ObjectResult<Object> {
+    let name = properties
+        .get("name")
+        .ok_or_else(|| ObjectError::element_not_found("name"))?;
+    let email = properties
+        .get("email")
+        .ok_or_else(|| ObjectError::element_not_found("email"))?;
+    let uri = properties
+        .get("uri")
+        .ok_or_else(|| ObjectError::element_not_found("uri"))?;
+    let photo = properties
+        .get("photo")
+        .ok_or_else(|| ObjectError::element_not_found("photo"))?;
+    let username = properties
+        .get("username")
+        .ok_or_else(|| ObjectError::element_not_found("username"))?;
+
+    Ok(Object::person(name, email, uri, photo, username))
+}
+
+fn read_changeset(properties: &HashMap<String, String>) -> ObjectResult<Object> {
+    let id = properties
+        .get("id")
+        .ok_or_else(|| ObjectError::element_not_found("id"))?;
+    let title = properties
+        .get("title")
+        .ok_or_else(|| ObjectError::element_not_found("title"))?;
+    let alternate = properties
+        .get("alternate")
+        .ok_or_else(|| ObjectError::element_not_found("alternate"))?;
+
+    Ok(Object::changeset(id, title, alternate))
+}
+
+fn read_issue(properties: &HashMap<String, String>) -> ObjectResult<Object> {
+    let id = properties
+        .get("id")
+        .ok_or_else(|| ObjectError::element_not_found("id"))?;
+    let title = properties
+        .get("title")
+        .ok_or_else(|| ObjectError::element_not_found("title"))?;
+    let summary = properties
+        .get("summary")
+        .ok_or_else(|| ObjectError::element_not_found("summary"))?;
+    let alternate = properties
+        .get("alternate")
+        .ok_or_else(|| ObjectError::element_not_found("alternate"))?;
+
+    Ok(Object::issue(id, title, summary, alternate))
+}
+
+fn read_repository(properties: &HashMap<String, String>) -> ObjectResult<Object> {
+    let id = properties
+        .get("id")
+        .ok_or_else(|| ObjectError::element_not_found("id"))?;
+    let title = properties
+        .get("title")
+        .ok_or_else(|| ObjectError::element_not_found("title"))?;
+    let alternate = properties
+        .get("alternate")
+        .ok_or_else(|| ObjectError::element_not_found("alternate"))?;
+
+    Ok(Object::repository(id, title, alternate))
+}
+
+fn read_review(properties: &HashMap<String, String>) -> ObjectResult<Object> {
+    let id = properties
+        .get("id")
+        .ok_or_else(|| ObjectError::element_not_found("id"))?;
+    let title = properties
+        .get("title")
+        .ok_or_else(|| ObjectError::element_not_found("title"))?;
+    let summary = properties
+        .get("summary")
+        .ok_or_else(|| ObjectError::element_not_found("summary"))?;
+    let alternate = properties
+        .get("alternate")
+        .ok_or_else(|| ObjectError::element_not_found("alternate"))?;
+
+    Ok(Object::review(id, title, summary, alternate))
+}
+
+fn read_page(properties: &HashMap<String, String>) -> ObjectResult<Object> {
+    let id = properties
+        .get("id")
+        .ok_or_else(|| ObjectError::element_not_found("id"))?;
+    let title = properties
+        .get("title")
+        .ok_or_else(|| ObjectError::element_not_found("title"))?;
+    let alternate = properties
+        .get("alternate")
+        .ok_or_else(|| ObjectError::element_not_found("alternate"))?;
+
+    Ok(Object::page(id, title, alternate))
+}
+
+fn read_space(properties: &HashMap<String, String>) -> ObjectResult<Object> {
+    let id = properties
+        .get("id")
+        .ok_or_else(|| ObjectError::element_not_found("id"))?;
+    let title = properties
+        .get("title")
+        .ok_or_else(|| ObjectError::element_not_found("title"))?;
+    let alternate = properties
+        .get("alternate")
+        .ok_or_else(|| ObjectError::element_not_found("alternate"))?;
+
+    Ok(Object::space(id, title, alternate))
+}
+
 pub fn read_entry<I>(it: &mut I) -> EntryResult<Entry>
 where
     I: Iterator<Item = XmlResult<XmlEvent>>,
@@ -80,26 +239,23 @@ where
             XmlEvent::StartElement { ref name, .. } if name.local_name == "author" => {
                 info!("Reading author");
 
-                author = Some(
-                    Object::try_from(&read_map(&name.local_name, it))
-                        .map_err(EntryError::read_object_error)?,
-                );
+                let properties = read_map(&name.local_name, it);
+
+                author = Some(read_object(&properties).map_err(EntryError::read_object_error)?);
             }
             XmlEvent::StartElement { ref name, .. } if name.local_name == "object" => {
                 info!("Reading object");
 
-                objects.push(
-                    Object::try_from(&read_map(&name.local_name, it))
-                        .map_err(EntryError::read_object_error)?,
-                );
+                let properties = read_map(&name.local_name, it);
+
+                objects.push(read_object(&properties).map_err(EntryError::read_object_error)?);
             }
             XmlEvent::StartElement { ref name, .. } if name.local_name == "target" => {
                 info!("Reading target");
 
-                target = Some(
-                    Object::try_from(&read_map(&name.local_name, it))
-                        .map_err(EntryError::read_object_error)?,
-                );
+                let properties = read_map(&name.local_name, it);
+
+                target = Some(read_object(&properties).map_err(EntryError::read_object_error)?);
             }
             XmlEvent::StartElement {
                 ref name,

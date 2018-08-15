@@ -1,10 +1,6 @@
-use std::collections::HashMap;
 use std::fmt::Display;
 use std::fmt::Formatter;
 use std::fmt::Result as FmtResult;
-
-use super::ObjectError;
-use super::ObjectResult;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Object {
@@ -59,208 +55,79 @@ pub enum Object {
 }
 
 impl Object {
-    pub fn try_from(properties: &HashMap<String, String>) -> ObjectResult<Object> {
-        debug!("parsing object from {:?}", properties);
-
-        if let Some(object_type) = properties.get("object-type") {
-            if object_type == "http://activitystrea.ms/schema/1.0/comment" {
-                Object::parse_comment(properties)
-            } else if object_type == "http://activitystrea.ms/schema/1.0/file" {
-                Object::parse_file(properties)
-            } else if object_type == "http://activitystrea.ms/schema/1.0/person" {
-                Object::parse_person(properties)
-            } else if object_type == "http://streams.atlassian.com/syndication/types/changeset" {
-                Object::parse_changeset(properties)
-            } else if object_type == "http://streams.atlassian.com/syndication/types/issue" {
-                Object::parse_issue(properties)
-            } else if object_type == "http://streams.atlassian.com/syndication/types/repository" {
-                Object::parse_repository(properties)
-            } else if object_type == "http://streams.atlassian.com/syndication/types/review" {
-                Object::parse_review(properties)
-            } else if object_type == "http://streams.atlassian.com/syndication/types/page" {
-                Object::parse_page(properties)
-            } else if object_type == "http://streams.atlassian.com/syndication/types/space" {
-                Object::parse_space(properties)
-            } else {
-                Err(ObjectError::wrong_object_type(object_type))
-            }
-        } else {
-            Err(ObjectError::MissingObjectType)
+    pub fn comment(id: &str, alternate: &str) -> Object {
+        Object::Comment {
+            id: id.into(),
+            alternate: alternate.into(),
         }
     }
 
-    fn parse_comment(properties: &HashMap<String, String>) -> ObjectResult<Object> {
-        let id = properties
-            .get("id")
-            .ok_or_else(|| ObjectError::element_not_found("id"))?;
-        let alternate = properties
-            .get("alternate")
-            .ok_or_else(|| ObjectError::element_not_found("alternate"))?;
-
-        Ok(Object::Comment {
-            id: id.clone(),
-            alternate: alternate.clone(),
-        })
+    pub fn file(id: &str, title: &str, alternate: &str) -> Object {
+        Object::File {
+            id: id.into(),
+            title: title.into(),
+            alternate: alternate.into(),
+        }
     }
 
-    fn parse_file(properties: &HashMap<String, String>) -> ObjectResult<Object> {
-        let id = properties
-            .get("id")
-            .ok_or_else(|| ObjectError::element_not_found("id"))?;
-        let title = properties
-            .get("title")
-            .ok_or_else(|| ObjectError::element_not_found("title"))?;
-        let alternate = properties
-            .get("alternate")
-            .ok_or_else(|| ObjectError::element_not_found("alternate"))?;
-
-        Ok(Object::File {
-            id: id.clone(),
-            title: title.clone(),
-            alternate: alternate.clone(),
-        })
+    pub fn person(name: &str, email: &str, uri: &str, photo: &str, username: &str) -> Object {
+        Object::Person {
+            name: name.into(),
+            email: email.into(),
+            uri: uri.into(),
+            photo: photo.into(),
+            username: username.into(),
+        }
     }
 
-    fn parse_person(properties: &HashMap<String, String>) -> ObjectResult<Object> {
-        let name = properties
-            .get("name")
-            .ok_or_else(|| ObjectError::element_not_found("name"))?;
-        let email = properties
-            .get("email")
-            .ok_or_else(|| ObjectError::element_not_found("email"))?;
-        let uri = properties
-            .get("uri")
-            .ok_or_else(|| ObjectError::element_not_found("uri"))?;
-        let photo = properties
-            .get("photo")
-            .ok_or_else(|| ObjectError::element_not_found("photo"))?;
-        let username = properties
-            .get("username")
-            .ok_or_else(|| ObjectError::element_not_found("username"))?;
-
-        Ok(Object::Person {
-            name: name.clone(),
-            email: email.clone(),
-            uri: uri.clone(),
-            photo: photo.clone(),
-            username: username.clone(),
-        })
+    pub fn changeset(id: &str, title: &str, alternate: &str) -> Object {
+        Object::Changeset {
+            id: id.into(),
+            title: title.into(),
+            alternate: alternate.into(),
+        }
     }
 
-    fn parse_changeset(properties: &HashMap<String, String>) -> ObjectResult<Object> {
-        let id = properties
-            .get("id")
-            .ok_or_else(|| ObjectError::element_not_found("id"))?;
-        let title = properties
-            .get("title")
-            .ok_or_else(|| ObjectError::element_not_found("title"))?;
-        let alternate = properties
-            .get("alternate")
-            .ok_or_else(|| ObjectError::element_not_found("alternate"))?;
-
-        Ok(Object::Changeset {
-            id: id.clone(),
-            title: title.clone(),
-            alternate: alternate.clone(),
-        })
+    pub fn issue(id: &str, title: &str, summary: &str, alternate: &str) -> Object {
+        Object::Issue {
+            id: id.into(),
+            title: title.into(),
+            summary: summary.into(),
+            alternate: alternate.into(),
+        }
     }
 
-    fn parse_issue(properties: &HashMap<String, String>) -> ObjectResult<Object> {
-        let id = properties
-            .get("id")
-            .ok_or_else(|| ObjectError::element_not_found("id"))?;
-        let title = properties
-            .get("title")
-            .ok_or_else(|| ObjectError::element_not_found("title"))?;
-        let summary = properties
-            .get("summary")
-            .ok_or_else(|| ObjectError::element_not_found("summary"))?;
-        let alternate = properties
-            .get("alternate")
-            .ok_or_else(|| ObjectError::element_not_found("alternate"))?;
-
-        Ok(Object::Issue {
-            id: id.clone(),
-            title: title.clone(),
-            summary: summary.clone(),
-            alternate: alternate.clone(),
-        })
+    pub fn repository(id: &str, title: &str, alternate: &str) -> Object {
+        Object::Repository {
+            id: id.into(),
+            title: title.into(),
+            alternate: alternate.into(),
+        }
     }
 
-    fn parse_repository(properties: &HashMap<String, String>) -> ObjectResult<Object> {
-        let id = properties
-            .get("id")
-            .ok_or_else(|| ObjectError::element_not_found("id"))?;
-        let title = properties
-            .get("title")
-            .ok_or_else(|| ObjectError::element_not_found("title"))?;
-        let alternate = properties
-            .get("alternate")
-            .ok_or_else(|| ObjectError::element_not_found("alternate"))?;
-
-        Ok(Object::Repository {
-            id: id.clone(),
-            title: title.clone(),
-            alternate: alternate.clone(),
-        })
+    pub fn review(id: &str, title: &str, summary: &str, alternate: &str) -> Object {
+        Object::Review {
+            id: id.into(),
+            title: title.into(),
+            summary: summary.into(),
+            alternate: alternate.into(),
+        }
     }
 
-    fn parse_review(properties: &HashMap<String, String>) -> ObjectResult<Object> {
-        let id = properties
-            .get("id")
-            .ok_or_else(|| ObjectError::element_not_found("id"))?;
-        let title = properties
-            .get("title")
-            .ok_or_else(|| ObjectError::element_not_found("title"))?;
-        let summary = properties
-            .get("summary")
-            .ok_or_else(|| ObjectError::element_not_found("summary"))?;
-        let alternate = properties
-            .get("alternate")
-            .ok_or_else(|| ObjectError::element_not_found("alternate"))?;
-
-        Ok(Object::Review {
-            id: id.clone(),
-            title: title.clone(),
-            summary: summary.clone(),
-            alternate: alternate.clone(),
-        })
+    pub fn page(id: &str, title: &str, alternate: &str) -> Object {
+        Object::Page {
+            id: id.into(),
+            title: title.into(),
+            alternate: alternate.into(),
+        }
     }
 
-    fn parse_page(properties: &HashMap<String, String>) -> ObjectResult<Object> {
-        let id = properties
-            .get("id")
-            .ok_or_else(|| ObjectError::element_not_found("id"))?;
-        let title = properties
-            .get("title")
-            .ok_or_else(|| ObjectError::element_not_found("title"))?;
-        let alternate = properties
-            .get("alternate")
-            .ok_or_else(|| ObjectError::element_not_found("alternate"))?;
-
-        Ok(Object::Page {
-            id: id.clone(),
-            title: title.clone(),
-            alternate: alternate.clone(),
-        })
-    }
-
-    fn parse_space(properties: &HashMap<String, String>) -> ObjectResult<Object> {
-        let id = properties
-            .get("id")
-            .ok_or_else(|| ObjectError::element_not_found("id"))?;
-        let title = properties
-            .get("title")
-            .ok_or_else(|| ObjectError::element_not_found("title"))?;
-        let alternate = properties
-            .get("alternate")
-            .ok_or_else(|| ObjectError::element_not_found("alternate"))?;
-
-        Ok(Object::Space {
-            id: id.clone(),
-            title: title.clone(),
-            alternate: alternate.clone(),
-        })
+    pub fn space(id: &str, title: &str, alternate: &str) -> Object {
+        Object::Space {
+            id: id.into(),
+            title: title.into(),
+            alternate: alternate.into(),
+        }
     }
 }
 
