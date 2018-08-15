@@ -1,3 +1,5 @@
+use rand;
+use rand::Rng;
 use serde_yaml;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -6,7 +8,6 @@ use std::hash::Hash;
 use config::ActivityConfig;
 use config::Config;
 use config::IgnoreConfig;
-use config::MessageConfig;
 use config::MessageGroup;
 use stream::Entry;
 use stream::Object;
@@ -15,7 +16,7 @@ use stream::Object;
 pub struct FeedToActivity<'a> {
     ignore: &'a [IgnoreConfig],
     activities: &'a [ActivityConfig],
-    messages: &'a [MessageConfig],
+    messages: &'a HashMap<String, Vec<String>>,
 }
 
 impl<'a> FeedToActivity<'a> {
@@ -34,7 +35,7 @@ impl<'a> FeedToActivity<'a> {
         let group_messages = self.get_group_messages(entries);
 
         for (group, messages) in group_messages.into_iter() {
-            let messages = messages.values().into();
+            let messages = messages.values().iter().take(3).cloned().collect();
 
             result.insert(group, messages);
         }
@@ -44,28 +45,31 @@ impl<'a> FeedToActivity<'a> {
 
     fn get_group_messages(&self, entries: &[Entry]) -> HashMap<String, DistinctGroup<String>> {
         let mut result = HashMap::new();
+        let mut rng = rand::thread_rng();
 
         for entry in entries {
             if self.should_ingore_entry(entry) {
                 continue;
             }
 
-            let keys = self.get_entry_keys(entry);
+            let groups = self.get_entry_groups(entry);
 
-            if !keys.is_empty() {
-                for message in self.messages.iter().filter(|m| keys.contains(m.key())) {
-                    if let Some(group) = get_entry_group(entry, message.group()) {
+            if !groups.is_empty() {
+                for (key, group) in groups {
+                    if let Some(messages) = self.messages.get(key) {
                         let values = result.entry(group).or_insert_with(|| DistinctGroup::new());
-                        let messages = message.messages().iter().cloned();
 
-                        values.extend(messages);
+                        if let Some(message) = rng.choose(messages) {
+                            values.push(message.clone());
+                        }
+                    } else {
+                        warn!("Messages for key `{}` not found", key);
                     }
                 }
             } else {
                 if let Ok(text) = serde_yaml::to_string(entry) {
                     warn!("------- unknown verb list -------");
                     warn!("{}", text);
-                    warn!("---------------------------------");
                 }
             }
         }
@@ -73,16 +77,18 @@ impl<'a> FeedToActivity<'a> {
         result
     }
 
-    fn get_entry_keys(&self, entry: &Entry) -> HashSet<&str> {
-        let mut keys = HashSet::with_capacity(2);
+    fn get_entry_groups(&self, entry: &Entry) -> HashMap<&str, String> {
+        let mut result = HashMap::with_capacity(2);
 
         for activity in self.activities {
             if is_entry_match(entry, activity.verbs(), activity.application()) {
-                keys.insert(activity.key());
+                if let Some(group) = get_entry_group(entry, activity.group()) {
+                    result.insert(activity.key(), group);
+                }
             }
         }
 
-        keys
+        result
     }
 
     fn should_ingore_entry(&self, entry: &Entry) -> bool {
@@ -96,6 +102,7 @@ impl<'a> FeedToActivity<'a> {
     }
 }
 
+#[derive(Debug)]
 struct DistinctGroup<T>
 where
     T: PartialEq + Eq + Hash + Clone,
@@ -115,13 +122,6 @@ where
         }
     }
 
-    fn extend<I>(&mut self, iter: I)
-    where
-        I: IntoIterator<Item = T>,
-    {
-        iter.into_iter().for_each(|v| self.push(v));
-    }
-
     fn push(&mut self, value: T) {
         if !self.distinct_values.contains(&value) {
             self.distinct_values.insert(value.clone());
@@ -136,7 +136,7 @@ where
 
 fn get_entry_group(entry: &Entry, group: MessageGroup) -> Option<String> {
     match group {
-        MessageGroup::TargetIssue | MessageGroup::TargetReview => {
+        MessageGroup::TargetIssue | MessageGroup::TargetReview | MessageGroup::TargetPage => {
             entry.target().map(|t| format!("{}", t))
         }
         MessageGroup::ObjectIssue => entry
@@ -155,6 +155,17 @@ fn get_entry_group(entry: &Entry, group: MessageGroup) -> Option<String> {
             .iter()
             .filter_map(|o| {
                 if let Object::Review { .. } = o {
+                    Some(format!("{}", o))
+                } else {
+                    None
+                }
+            })
+            .next(),
+        MessageGroup::ObjectPage => entry
+            .objects()
+            .iter()
+            .filter_map(|o| {
+                if let Object::Page { .. } = o {
                     Some(format!("{}", o))
                 } else {
                     None

@@ -1,4 +1,5 @@
 use serde_yaml::from_reader;
+use std::collections::HashMap;
 use std::env::args;
 use std::fs::File;
 
@@ -45,7 +46,7 @@ pub struct ServerConfig {
 pub struct ActivitiesConfig {
     ignore: Vec<IgnoreConfig>,
     activities: Vec<ActivityConfig>,
-    messages: Vec<MessageConfig>,
+    messages: HashMap<String, Vec<String>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -57,23 +58,25 @@ pub struct IgnoreConfig {
 #[derive(Debug, Deserialize)]
 pub struct ActivityConfig {
     application: Option<String>,
-    verbs: Vec<String>,
     key: String,
+    group: MessageGroup,
+    verbs: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct MessageConfig {
-    group: MessageGroup,
-    messages: Vec<String>,
     key: String,
+    messages: Vec<String>,
 }
 
 #[derive(Debug, Clone, Copy, Deserialize)]
 pub enum MessageGroup {
     TargetIssue,
     TargetReview,
+    TargetPage,
     ObjectIssue,
     ObjectReview,
+    ObjectPage,
     Content,
 }
 
@@ -149,7 +152,7 @@ impl ActivitiesConfig {
         &self.activities
     }
 
-    pub fn messages(&self) -> &[MessageConfig] {
+    pub fn messages(&self) -> &HashMap<String, Vec<String>> {
         &self.messages
     }
 }
@@ -169,26 +172,26 @@ impl ActivityConfig {
         self.application.as_ref()
     }
 
-    pub fn verbs(&self) -> &[String] {
-        &self.verbs
-    }
-
     pub fn key(&self) -> &str {
         &self.key
     }
-}
 
-impl MessageConfig {
     pub fn group(&self) -> MessageGroup {
         self.group
     }
 
-    pub fn messages(&self) -> &[String] {
-        &self.messages
+    pub fn verbs(&self) -> &[String] {
+        &self.verbs
     }
+}
 
+impl MessageConfig {
     pub fn key(&self) -> &str {
         &self.key
+    }
+
+    pub fn messages(&self) -> &[String] {
+        &self.messages
     }
 }
 

@@ -35,7 +35,7 @@ fn main() {
     let client = ActivityStreamsClient::new(&config);
     let converter = FeedToActivity::new(&config);
 
-    let tm = strptime("2018-08-13", "%Y-%m-%d").unwrap();
+    let tm = strptime("2018-08-15", "%Y-%m-%d").unwrap();
     let start_time = tm.to_timespec();
     let end_time = start_time + Duration::days(1);
     let start_timestamp = start_time.sec * 1000;
@@ -51,7 +51,7 @@ fn main() {
                 println!("{}", member);
 
                 for (group, messages) in converter.convert(entries) {
-                    println!("* {} - {:?}", group, messages);
+                    println!("* {} - {}", messages.join(", "), group);
                 }
 
                 println!("----------------");
