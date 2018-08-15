@@ -46,6 +46,16 @@ pub enum Object {
         summary: String,
         alternate: String,
     },
+    Page {
+        id: String,
+        title: String,
+        alternate: String,
+    },
+    Space {
+        id: String,
+        title: String,
+        alternate: String,
+    },
 }
 
 impl Object {
@@ -67,6 +77,10 @@ impl Object {
                 Object::parse_repository(properties)
             } else if object_type == "http://streams.atlassian.com/syndication/types/review" {
                 Object::parse_review(properties)
+            } else if object_type == "http://streams.atlassian.com/syndication/types/page" {
+                Object::parse_page(properties)
+            } else if object_type == "http://streams.atlassian.com/syndication/types/space" {
+                Object::parse_space(properties)
             } else {
                 Err(ObjectError::wrong_object_type(object_type))
             }
@@ -212,6 +226,42 @@ impl Object {
             alternate: alternate.clone(),
         })
     }
+
+    fn parse_page(properties: &HashMap<String, String>) -> ObjectResult<Object> {
+        let id = properties
+            .get("id")
+            .ok_or_else(|| ObjectError::element_not_found("id"))?;
+        let title = properties
+            .get("title")
+            .ok_or_else(|| ObjectError::element_not_found("title"))?;
+        let alternate = properties
+            .get("alternate")
+            .ok_or_else(|| ObjectError::element_not_found("alternate"))?;
+
+        Ok(Object::Page {
+            id: id.clone(),
+            title: title.clone(),
+            alternate: alternate.clone(),
+        })
+    }
+
+    fn parse_space(properties: &HashMap<String, String>) -> ObjectResult<Object> {
+        let id = properties
+            .get("id")
+            .ok_or_else(|| ObjectError::element_not_found("id"))?;
+        let title = properties
+            .get("title")
+            .ok_or_else(|| ObjectError::element_not_found("title"))?;
+        let alternate = properties
+            .get("alternate")
+            .ok_or_else(|| ObjectError::element_not_found("alternate"))?;
+
+        Ok(Object::Space {
+            id: id.clone(),
+            title: title.clone(),
+            alternate: alternate.clone(),
+        })
+    }
 }
 
 impl Display for Object {
@@ -224,6 +274,8 @@ impl Display for Object {
             Object::Issue { ref title, .. } => write!(f, "{}", title),
             Object::Repository { ref title, .. } => write!(f, "{}", title),
             Object::Review { ref title, .. } => write!(f, "{}", title),
+            Object::Page { ref title, .. } => write!(f, "{}", title),
+            Object::Space { ref title, .. } => write!(f, "{}", title),
         }
     }
 }
