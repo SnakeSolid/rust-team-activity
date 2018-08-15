@@ -16,6 +16,7 @@ extern crate xml;
 mod config;
 mod context;
 mod database;
+mod entity;
 mod stream;
 
 use config::Config;
@@ -45,7 +46,7 @@ fn main() {
         match client.query_between(member, start_timestamp, end_timestamp) {
             Ok(text) => {
                 let bytes = text.as_bytes();
-                let feed = stream::read(bytes).unwrap();
+                let feed = entity::read(bytes).unwrap();
                 let entries = feed.entries();
 
                 println!("{}", member);

@@ -9,8 +9,8 @@ use config::ActivityConfig;
 use config::Config;
 use config::IgnoreConfig;
 use config::MessageGroup;
-use stream::Entry;
-use stream::Object;
+use entity::Entry;
+use entity::Object;
 
 #[derive(Debug)]
 pub struct FeedToActivity<'a> {
