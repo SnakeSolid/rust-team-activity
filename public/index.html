@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.3.3/semantic.min.css" integrity="sha256-ncjDAd2/rm/vaNTqp7Kk96MfSeHACtbiDU9NWKqNuCI=" crossorigin="anonymous" />
+
+  <script async data-main="/static/js/init.js" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.5/require.min.js" integrity="sha256-0SGl1PJNDyJwcV5T+weg2zpEMrh7xvlwO4oXgvZCeZk=" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div class="ui segment">
+    <div class="item">
+      <div class="ui icon input" data-bind="css: { error: isDateInvalid }">
+        <input placeholder="Search..." type="date" data-bind="value: selectedDate">
+        <i class="search link icon" data-bind="click: showActivity"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="ui grid" data-bind="visible: isResultVisible">
+    <div class="two wide column"></div>
+
+    <div class="twelve wide column">
+      <h3 data-bind="text: getResultHeader()"></h3>
+
+      <table class="ui compact table">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Activity</th>
+          </tr>
+        </thead>
+
+        <tbody data-bind="foreach: activityItems().items">
+          <tr>
+            <td>
+              <h3 class="ui center aligned header" data-bind="text: author">A</h3>
+            </td>
+            <td data-bind="foreach: activities">
+              <ul>
+                <li data-bind="text: $data"></li>
+              </ul>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="two wide column"></div>
+  </div>
+
+  <div class="ui grid" data-bind="visible: isErrorVisible">
+    <div class="two wide column"></div>
+
+    <div class="twelve wide column">
+      <p data-bind="text: getErrorMessage()"></p>
+    </div>
+
+    <div class="two wide column"></div>
+  </div>
+</body>
+</html>

@@ -216,7 +216,7 @@ pub fn read_entry<I>(it: &mut I) -> EntryResult<Entry>
 where
     I: Iterator<Item = XmlResult<XmlEvent>>,
 {
-    info!("Reading entry");
+    debug!("Reading entry");
 
     let mut author: Option<Object> = None;
     let mut objects: Vec<Object> = Vec::with_capacity(0);
@@ -237,21 +237,21 @@ where
                 depth = 1;
             }
             XmlEvent::StartElement { ref name, .. } if name.local_name == "author" => {
-                info!("Reading author");
+                debug!("Reading author");
 
                 let properties = read_map(&name.local_name, it);
 
                 author = Some(read_object(&properties).map_err(EntryError::read_object_error)?);
             }
             XmlEvent::StartElement { ref name, .. } if name.local_name == "object" => {
-                info!("Reading object");
+                debug!("Reading object");
 
                 let properties = read_map(&name.local_name, it);
 
                 objects.push(read_object(&properties).map_err(EntryError::read_object_error)?);
             }
             XmlEvent::StartElement { ref name, .. } if name.local_name == "target" => {
-                info!("Reading target");
+                debug!("Reading target");
 
                 let properties = read_map(&name.local_name, it);
 
@@ -263,7 +263,7 @@ where
                 ..
             } if name.local_name == "link" =>
             {
-                info!("Reading link");
+                debug!("Reading link");
 
                 let rel = attributes.iter().find(|e| e.name.local_name == "rel");
                 let href = attributes.iter().find(|e| e.name.local_name == "href");
@@ -353,7 +353,7 @@ pub fn read_feed<I>(it: &mut I) -> FeedResult<Feed>
 where
     I: Iterator<Item = XmlResult<XmlEvent>>,
 {
-    info!("Reading feed");
+    debug!("Reading feed");
 
     let mut entries: Vec<Entry> = Vec::with_capacity(1);
     let mut properties = HashMap::new();
@@ -379,7 +379,7 @@ where
                 ..
             } if name.local_name == "link" =>
             {
-                info!("Reading link");
+                debug!("Reading link");
 
                 let rel = attributes.iter().find(|e| e.name.local_name == "rel");
                 let href = attributes.iter().find(|e| e.name.local_name == "href");

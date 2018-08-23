@@ -12,7 +12,7 @@ pub use self::error::DatabaseResult;
 use self::inner::DatabaseInner;
 use Config;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Database {
     inner: Arc<Mutex<DatabaseInner>>,
 }
@@ -39,5 +39,37 @@ impl Database {
             .lock()
             .map_err(DatabaseError::mutex_lock_error)?
             .has_entry(id)
+    }
+
+    pub fn save_entry(
+        &self,
+        id: &str,
+        author: &str,
+        published: i64,
+        data: &str,
+    ) -> DatabaseResult<()> {
+        self.inner
+            .lock()
+            .map_err(DatabaseError::mutex_lock_error)?
+            .save_entry(id, author, published, data)
+    }
+
+    pub fn last_published(&self, author: &str) -> DatabaseResult<Option<i64>> {
+        self.inner
+            .lock()
+            .map_err(DatabaseError::mutex_lock_error)?
+            .last_published(author)
+    }
+
+    pub fn published_between(
+        &self,
+        author: &str,
+        start_date: i64,
+        end_date: i64,
+    ) -> DatabaseResult<Vec<String>> {
+        self.inner
+            .lock()
+            .map_err(DatabaseError::mutex_lock_error)?
+            .published_between(author, start_date, end_date)
     }
 }

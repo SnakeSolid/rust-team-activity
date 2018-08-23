@@ -13,6 +13,8 @@ pub enum DatabaseError {
     PrepareFailed { message: String },
     BindFailed { message: String },
     NextFailed { message: String },
+    NoSuchColumn,
+    NoSuchValue,
 }
 
 macro_rules! error_method {
@@ -45,6 +47,14 @@ impl DatabaseError {
     error_method!(prepare_failed, PrepareFailed, "Prepare failed");
     error_method!(bind_failed, BindFailed, "Bind failed");
     error_method!(next_failed, NextFailed, "Next failed");
+
+    pub fn no_such_column() -> DatabaseError {
+        DatabaseError::NoSuchColumn
+    }
+
+    pub fn no_such_value() -> DatabaseError {
+        DatabaseError::NoSuchValue
+    }
 }
 
 impl Display for DatabaseError {
@@ -62,6 +72,8 @@ impl Display for DatabaseError {
             }
             DatabaseError::BindFailed { ref message } => write!(f, "Bind failed: {}", message),
             DatabaseError::NextFailed { ref message } => write!(f, "Next failed: {}", message),
+            DatabaseError::NoSuchColumn => write!(f, "No such column"),
+            DatabaseError::NoSuchValue => write!(f, "No such value"),
         }
     }
 }

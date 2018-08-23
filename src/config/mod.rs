@@ -8,33 +8,39 @@ mod error;
 use self::error::ConfigError;
 use self::error::ConfigResult;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Config {
     streams: StreamsConfig,
     database: DatabaseConfig,
     #[serde(default = "default_server")]
     server: ServerConfig,
-    #[serde(default = "default_pull_interval")]
-    pull_interval: usize,
     members: Vec<String>,
     activity: ActivitiesConfig,
+    #[serde(default = "default_start_worker")]
+    start_worker: bool,
+    #[serde(default = "default_pull_interval")]
+    pull_interval: u64,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct StreamsConfig {
     url: String,
     #[serde(default = "default_max_results")]
     max_results: usize,
     username: String,
     password: Option<String>,
+    #[serde(default = "default_root_certificates")]
+    root_certificates: Vec<String>,
+    #[serde(default = "default_hostname_verification")]
+    hostname_verification: bool,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct DatabaseConfig {
     path: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct ServerConfig {
     #[serde(default = "default_address")]
     address: String,
@@ -42,20 +48,20 @@ pub struct ServerConfig {
     port: u16,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct ActivitiesConfig {
     ignore: Vec<IgnoreConfig>,
     activities: Vec<ActivityConfig>,
     messages: HashMap<String, Vec<String>>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct IgnoreConfig {
     application: Option<String>,
     verbs: Vec<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct ActivityConfig {
     application: Option<String>,
     key: String,
@@ -63,7 +69,7 @@ pub struct ActivityConfig {
     verbs: Vec<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct MessageConfig {
     key: String,
     messages: Vec<String>,
@@ -106,16 +112,20 @@ impl Config {
         &self.server
     }
 
-    pub fn pull_interval(&self) -> usize {
-        self.pull_interval
-    }
-
     pub fn activity(&self) -> &ActivitiesConfig {
         &self.activity
     }
 
     pub fn members(&self) -> &[String] {
         &self.members
+    }
+
+    pub fn start_worker(&self) -> bool {
+        self.start_worker
+    }
+
+    pub fn pull_interval(&self) -> u64 {
+        self.pull_interval
     }
 }
 
@@ -135,11 +145,29 @@ impl StreamsConfig {
     pub fn password(&self) -> Option<&String> {
         self.password.as_ref()
     }
+
+    pub fn root_certificates(&self) -> &[String] {
+        &self.root_certificates
+    }
+
+    pub fn hostname_verification(&self) -> bool {
+        self.hostname_verification
+    }
 }
 
 impl DatabaseConfig {
     pub fn path(&self) -> &str {
         &self.path
+    }
+}
+
+impl ServerConfig {
+    pub fn address(&self) -> &str {
+        &self.address
+    }
+
+    pub fn port(&self) -> u16 {
+        self.port
     }
 }
 
@@ -185,18 +213,8 @@ impl ActivityConfig {
     }
 }
 
-impl MessageConfig {
-    pub fn key(&self) -> &str {
-        &self.key
-    }
-
-    pub fn messages(&self) -> &[String] {
-        &self.messages
-    }
-}
-
 #[inline]
-fn default_pull_interval() -> usize {
+fn default_pull_interval() -> u64 {
     3600
 }
 
@@ -220,4 +238,19 @@ fn default_address() -> String {
 #[inline]
 fn default_port() -> u16 {
     8080
+}
+
+#[inline]
+fn default_root_certificates() -> Vec<String> {
+    Vec::with_capacity(0)
+}
+
+#[inline]
+fn default_hostname_verification() -> bool {
+    true
+}
+
+#[inline]
+fn default_start_worker() -> bool {
+    true
 }
