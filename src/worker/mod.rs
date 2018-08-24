@@ -68,7 +68,7 @@ impl Worker {
 
             let elapsed = start_time.duration_since(end_time);
 
-            debug!("Worker round time {}", elapsed.as_secs());
+            info!("Worker round time {}", elapsed.as_secs());
 
             if elapsed < interval {
                 let sleep_interval = interval - elapsed;
