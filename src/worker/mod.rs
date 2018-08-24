@@ -59,11 +59,12 @@ impl Worker {
 
         loop {
             end_time = start_time;
-            start_time = Instant::now();
 
             if let Err(err) = self.update_activity(&client) {
                 warn!("Failed to update last activity: {}", err);
             }
+
+            start_time = Instant::now();
 
             let elapsed = start_time.duration_since(end_time);
 
