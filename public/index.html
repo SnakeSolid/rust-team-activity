@@ -10,11 +10,19 @@
 </head>
 <body>
   <div class="ui segment">
-    <div class="item">
-      <div class="ui icon input" data-bind="css: { error: isDateInvalid }">
-        <input placeholder="Search..." type="date" data-bind="value: selectedDate">
-        <i class="search link icon" data-bind="click: showActivity"></i>
-      </div>
+    <div class="ui grid">
+      <div class="two wide column"></div>
+
+      <div class="twelve wide column">
+        <div class="item">
+          <div class="ui action input" data-bind="css: { error: isDateInvalid }">
+            <input type="date" data-bind="value: selectedDate">
+            <button class="ui primary button" data-bind="click: showActivity">Show</button>
+          </div>
+        </div>
+        </div>
+
+      <div class="two wide column"></div>
     </div>
   </div>
 
