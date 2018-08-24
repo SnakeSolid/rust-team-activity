@@ -1,6 +1,6 @@
 mod activity;
 
-use self::activity::ActivytyHandler;
+use self::activity::ActivityHandler;
 
 use iron::Iron;
 use mount::Mount;
@@ -11,7 +11,7 @@ use Database;
 
 pub fn start(config: &Config, database: Database) -> () {
     let mut mount = Mount::new();
-    mount.mount("/api/v1/activity", ActivytyHandler::new(config, database));
+    mount.mount("/api/v1/activity", ActivityHandler::new(config, database));
     mount.mount("/static", Static::new("public/static"));
     mount.mount("/", Static::new("public"));
 

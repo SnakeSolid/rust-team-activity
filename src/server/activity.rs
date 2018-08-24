@@ -14,7 +14,7 @@ use entity::Entry;
 use stream::FeedToActivity;
 
 #[derive(Debug, Clone, Serialize)]
-pub struct ActivytyResult {
+pub struct ActivityResult {
     success: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     activity: Option<HashMap<String, Vec<String>>>,
@@ -22,17 +22,17 @@ pub struct ActivytyResult {
     message: Option<String>,
 }
 
-impl ActivytyResult {
-    fn with_success(activity: &HashMap<String, Vec<String>>) -> ActivytyResult {
-        ActivytyResult {
+impl ActivityResult {
+    fn with_success(activity: &HashMap<String, Vec<String>>) -> ActivityResult {
+        ActivityResult {
             success: true,
             activity: Some(activity.clone()),
             message: None,
         }
     }
 
-    fn with_error(message: &str) -> ActivytyResult {
-        ActivytyResult {
+    fn with_error(message: &str) -> ActivityResult {
+        ActivityResult {
             success: false,
             activity: None,
             message: Some(message.into()),
@@ -41,44 +41,77 @@ impl ActivytyResult {
 }
 
 #[derive(Debug)]
-pub struct ActivytyHandler {
+pub struct ActivityHandler {
     config: Config,
     database: Database,
 }
 
-impl ActivytyHandler {
-    pub fn new(config: &Config, database: Database) -> ActivytyHandler {
-        ActivytyHandler {
+impl ActivityHandler {
+    pub fn new(config: &Config, database: Database) -> ActivityHandler {
+        ActivityHandler {
             config: config.clone(),
             database,
         }
     }
 
-    fn published_between(&self, author: &str, activity_date: i64) -> Vec<Entry> {
+    fn published_between(&self, author: &str, activity_date: i64) -> IronResult<Vec<Entry>> {
         let start_date = activity_date;
         let end_date = activity_date + 60 * 60 * 24;
-
-        self.database
+        let result = self
+            .database
             .published_between(author, start_date, end_date)
             .unwrap()
             .iter()
             .map(|s| serde_yaml::from_str(s).unwrap())
-            .collect()
+            .collect();
+
+        Ok(result)
     }
 }
 
-impl Handler for ActivytyHandler {
+macro_rules! try_msg {
+    ($ex:expr, $callback:expr) => {
+        match $ex {
+            Ok(value) => value,
+            Err(err) => {
+                warn!("{}", err);
+
+                let result = try_err!($callback(err));
+
+                return result;
+            }
+        }
+    };
+}
+
+macro_rules! try_err {
+    ($ex:expr) => {{
+        let response = match serde_json::to_string(&$ex) {
+            Ok(body) => Response::with((status::Ok, body)),
+            Err(_) => Response::with(status::InternalServerError),
+        };
+
+        Ok(response)
+    }};
+}
+
+impl Handler for ActivityHandler {
     fn handle(&self, req: &mut Request) -> IronResult<Response> {
         let mut body = String::new();
 
-        req.body.read_to_string(&mut body).unwrap();
+        try_msg!(req.body.read_to_string(&mut body), |_| {
+            ActivityResult::with_error("Incomplete request")
+        });
 
-        let activity_date = serde_json::from_str(&body).unwrap();
+        let activity_date = try_msg!(serde_json::from_str(&body), |_| ActivityResult::with_error(
+            "Invalid request, expected UNIX time"
+        ));
+
         let converter = FeedToActivity::new(&self.config);
         let mut result = HashMap::new();
 
         for author in self.config.members() {
-            let entries = self.published_between(author, activity_date);
+            let entries = self.published_between(author, activity_date)?;
             let activities = converter.convert(&entries);
 
             for (group, actions) in activities {
@@ -89,9 +122,6 @@ impl Handler for ActivytyHandler {
             }
         }
 
-        Ok(Response::with((
-            status::Ok,
-            serde_json::to_string(&ActivytyResult::with_success(&result)).unwrap(),
-        )))
+        try_err!(ActivityResult::with_success(&result))
     }
 }
