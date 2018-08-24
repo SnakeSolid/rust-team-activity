@@ -40,7 +40,7 @@ impl Worker {
     }
 
     pub fn start(self) -> JoinHandle<()> {
-        info!("Worker starting...");
+        println!("Starting background worker...");
 
         Builder::new()
             .name("Stream worker".into())
