@@ -18,7 +18,6 @@ extern crate time;
 extern crate xml;
 
 mod config;
-mod context;
 mod database;
 mod entity;
 mod server;
