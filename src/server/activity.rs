@@ -5,11 +5,13 @@ use iron::Request;
 use iron::Response;
 use serde_json;
 use serde_yaml;
+use serde_yaml::Error as YamlError;
 use std::collections::HashMap;
 use std::io::Read;
 
 use config::Config;
 use database::Database;
+use database::DatabaseError;
 use entity::Entry;
 use stream::FeedToActivity;
 
@@ -46,27 +48,10 @@ pub struct ActivityHandler {
     database: Database,
 }
 
-impl ActivityHandler {
-    pub fn new(config: &Config, database: Database) -> ActivityHandler {
-        ActivityHandler {
-            config: config.clone(),
-            database,
-        }
-    }
+type HandlerResult<T> = Result<T, HandlerError>;
 
-    fn published_between(&self, author: &str, activity_date: i64) -> IronResult<Vec<Entry>> {
-        let start_date = activity_date;
-        let end_date = activity_date + 60 * 60 * 24;
-        let result = self
-            .database
-            .published_between(author, start_date, end_date)
-            .unwrap()
-            .iter()
-            .map(|s| serde_yaml::from_str(s).unwrap())
-            .collect();
-
-        Ok(result)
-    }
+struct HandlerError {
+    message: String,
 }
 
 macro_rules! try_msg {
@@ -95,6 +80,33 @@ macro_rules! try_err {
     }};
 }
 
+impl ActivityHandler {
+    pub fn new(config: &Config, database: Database) -> ActivityHandler {
+        ActivityHandler {
+            config: config.clone(),
+            database,
+        }
+    }
+
+    fn published_between(&self, author: &str, activity_date: i64) -> HandlerResult<Vec<Entry>> {
+        let start_date = activity_date;
+        let end_date = activity_date + 60 * 60 * 24;
+        let mut result = Vec::new();
+
+        for data in self
+            .database
+            .published_between(author, start_date, end_date)
+            .map_err(HandlerError::database_error)?
+        {
+            let entity = serde_yaml::from_str(&data).map_err(HandlerError::deserialization_error)?;
+
+            result.push(entity);
+        }
+
+        Ok(result)
+    }
+}
+
 impl Handler for ActivityHandler {
     fn handle(&self, req: &mut Request) -> IronResult<Response> {
         let mut body = String::new();
@@ -111,7 +123,10 @@ impl Handler for ActivityHandler {
         let mut result = HashMap::new();
 
         for author in self.config.members() {
-            let entries = self.published_between(author, activity_date)?;
+            let entries = match self.published_between(author, activity_date) {
+                Ok(entries) => entries,
+                Err(_) => return Ok(Response::with(status::InternalServerError)),
+            };
             let activities = converter.convert(&entries);
 
             for (group, actions) in activities {
@@ -123,5 +138,19 @@ impl Handler for ActivityHandler {
         }
 
         try_err!(ActivityResult::with_success(&result))
+    }
+}
+
+impl HandlerError {
+    fn database_error(error: DatabaseError) -> HandlerError {
+        HandlerError {
+            message: format!("{}", error).into(),
+        }
+    }
+
+    fn deserialization_error(error: YamlError) -> HandlerError {
+        HandlerError {
+            message: format!("{}", error).into(),
+        }
     }
 }
