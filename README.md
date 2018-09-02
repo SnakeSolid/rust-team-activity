@@ -86,13 +86,11 @@ activity:
 
   messages:
     task::start:
-      - "Investigation root cause"
       - "Start implementation"
-      - "Root cause analysis"
+      - "Analysis"
 
     task::resolve:
       - "Finished implementation"
-      - "Submitted code"
       - "Committed code"
       - "Resolved issue"
 
@@ -101,18 +99,11 @@ activity:
       - "New issue created"
 
     task::change:
-      - "Local verification"
       - "Verification"
-      - "Algorithm verification"
       - "Implementation"
-      - "Algorithm implementation"
 
     task::comment:
-      - "Local verification"
-      - "Verification"
-      - "Algorithm verification"
-      - "Implementation"
-      - "Algorithm implementation"
+      - "Making progress"
 
 start_worker: true
 pull_interval: 3600
