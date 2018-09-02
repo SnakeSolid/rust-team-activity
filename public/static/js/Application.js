@@ -43,7 +43,7 @@ define([ "ActivityItems", "knockout", "moment", "reqwest" ], function(ActivityIt
 			type: 'json',
   			method: 'post',
   			contentType: 'application/json',
-  			data: this.getSelectedDate().toString(),
+  			data: self.getSelectedDate().toString(),
 		}).then(function(resp) {
 			if (resp.success) {
 				self.activityItems(ActivityItems.fromResponce(resp.activity));
@@ -53,8 +53,8 @@ define([ "ActivityItems", "knockout", "moment", "reqwest" ], function(ActivityIt
 				self.isErrorVisible(true);
 			}
 		}).fail(function(err, msg) {
-			this.errorMessage(msg);
-			this.isErrorVisible(true);
+			self.errorMessage(msg);
+			self.isErrorVisible(true);
 		});
 	};
 
